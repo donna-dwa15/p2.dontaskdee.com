@@ -10,7 +10,7 @@
 	New user? Signup!
 </span>
 <br/>
-<a href="/users/signup"><img src="/images/Signup_btn.png" alt="signup!"/></a>
+<a href="/users/signup"><img src="/images/signup_btn.png" alt="signup!"/></a>
 <br/>
 <span id="break"><img src="/images/line.png"/></span>
 <br/>
