@@ -1,0 +1,49 @@
+body {
+	font-family:Arial,Helvetica,sans-serif;
+}
+h1 {
+	font-size:32px;
+}
+img {
+	border:0px;
+}
+#main_content {
+	position:absolute;
+	border:3px solid #000000;
+	border-radius: 15px;
+	font-size:16px;
+	width:800;
+	margin-top:-20px;
+	padding: 20px 20px;
+	z-index:1;
+}
+#main_content form,input,img{
+	margin:3px 0px;
+}
+#break img {
+	padding-top: 10px;
+	width:800px;
+}
+#login {
+	font-size:18px;
+	color:#94002D;
+	border:0px;
+}
+#new_user {
+	font-size:18px;
+	color:#1240AB;
+	border:0px;
+}
+#new_features {
+	padding:15px 15px;
+	color:#000000;
+}
+#new_features img{
+	width:30px;
+	height:30px;
+	padding-right:5px;
+	vertical-align:bottom;
+}
+.error {
+	color:#FF0000;
+}
