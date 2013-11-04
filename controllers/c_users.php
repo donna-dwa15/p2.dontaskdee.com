@@ -1,72 +1,187 @@
 <?php
-class users_controller extends base_controller {
+class users_controller extends base_controller 
+{
 
-	public function __construct() {
+	public function __construct() 
+	{
 		parent::__construct();
 	}
 
-	public function index() {
-		# Setup view
-		if(!$token)
+	public function index() 
+	{
+
+		# Need to check for token cookie
+		if(!isset($this->user->token))
 		{
+			# User not logged in so send them to login page
 			login();		
 		}
-		# Render template
-		echo $this->template;	
+		else
+		{
+			# Display user's welcome page
+			$this->template->title = "Welcome to ".APP_NAME;
+			$this->template->content = View::instance('v_users_index');
+			
+			echo $this->template;	
+		}
 	}
 
-	public function signup() {
+	public function signup($error = NULL) 
+	{
+	
+		# User is already logged in so no need to sign up
+		if(isset($this->user->token))
+		{
+			Router::redirect('/users/index');
+		}
+	
 		# Setup view
 		$this->template->content = View::instance('v_users_signup');
 		$this->template->title   = "Sign Up";
-
+		$client_files = Array("/css/form.css");
+	    $this->template->client_files_head = Utils::load_client_files($client_files);
+		
+		# Pass data to the view
+		$this->template->content->error = $error;
+		
+		# In case user clicked on a new signup link
+		# from a page with an error
+		# Clear out any previous session variables
+		if(!$error)
+		{
+			$_SESSION['error'] = null;
+			$_SESSION['first_name'] = null;
+			$_SESSION['last_name'] = null;
+			$_SESSION['email'] = null;
+			$_SESSION['password'] = null;
+			$_SESSION['password_confirm'] = null;
+		}
+		
 		# Render template
 		echo $this->template;	
 	}
 
-	public function p_signup() {
-		# Dump out the results of POST to see what the form submitted
-		// print_r($_POST);
-			
+	public function p_signup() 
+	{
+	
+		# Validate POST fields before processing further
+		$errors = Validate::validate_signup($_POST);
 		
-		# More data we want stored with the user
-		$_POST['created']  = Time::now();
-		$_POST['modified'] = Time::now();
-				
-		# Encrypt the password  
-		$_POST['password'] = sha1(PASSWORD_SALT.$_POST['password']);            
-
-		# Create an encrypted token via their email address and a random string
-		$_POST['token'] = sha1(TOKEN_SALT.$_POST['email'].Utils::generate_random_string());	
+		# If no error, check database to see if user already exists
+		# If so, return error message
+		
+		if(isset($errors) && count($errors) > 0) 
+		{
+			# Send them back to the signup page
+			$_SESSION['error'] = $errors;
+			$_SESSION['first_name'] = $_POST['first_name'];
+			$_SESSION['last_name'] = $_POST['last_name'];
+			$_SESSION['email'] = $_POST['email'];
+			$_SESSION['password'] = $_POST['password'];
+			$_SESSION['password_confirm'] = $_POST['password_confirm'];
 			
-		# Insert this user into the database
-		$user_id = DB::instance(DB_NAME)->insert('users', $_POST);
+			Router::redirect("/users/signup/error");
+		} 
+		else 
+		{
+			# Clear out error session variables if needed
+			if(isset($_SESSION['error']))
+			{
+				$_SESSION['error'] = null;
+				$_SESSION['first_name'] = null;
+				$_SESSION['last_name'] = null;
+				$_SESSION['email'] = null;
+				$_SESSION['password'] = null;
+				$_SESSION['password_confirm'] = null;
+			}
+			# clear out post vars that are not needed for new user insert
+			unset($_POST['password_confirm']);
+			# The x and y are from the image submit button
+			unset($_POST['x']);	
+			unset($_POST['y']);
+		
+			# More data we want stored with the user
+			$_POST['created']  = Time::now();
+			$_POST['modified'] = Time::now();
+			
+			# Clean up data
+			$_POST = Validate::clean_data($_POST);
+			
+			$q = "SELECT email
+				FROM users
+				WHERE email='".$_POST['email']."'
+				LIMIT 1";
+			
+			$exist_email = DB::instance(DB_NAME)->select_field($q);
+			
+			# Duplicate signup, ignore new sign up and alert user
+			if($exist_email)
+			{
+				# Send them back to the signup page
+				$_SESSION['error'] = array(0=>"Account already exists.");
+				Router::redirect("/users/signup/error");
+			}
+			
+			# Encrypt the password  
+			$_POST['password'] = sha1(PASSWORD_SALT.$_POST['password']);            
 
-		# For now, just confirm they've signed up - 
-		# You should eventually make a proper View for this
-		echo "You're signed up";         
+			# Create an encrypted token via their email address and a random string
+			$_POST['token'] = sha1(TOKEN_SALT.$_POST['email'].Utils::generate_random_string());	
+			
+			# Insert this user into the database
+			$user_id = DB::instance(DB_NAME)->insert('users', $_POST);
+
+			# On successful signup, login user and redirect to profile page
+			setcookie("token", $_POST['token'], strtotime('+2 day'), '/');
+			
+			Router::redirect("/users/profile");
+		}
     }
 	
-	public function login($error = NULL) {
+	public function login($error = NULL) 
+	{
+	
+		# User is already logged in so no need to log in again
+		if(isset($this->user->token))
+		{
+			Router::redirect('/users/index');
+		}
+		
 		# Setup view
         $this->template->content = View::instance('v_users_login');
         $this->template->title   = "Login";
+		$client_files = Array("/css/form.css");
+	    $this->template->client_files_head = Utils::load_client_files($client_files);
 
 		# Pass data to the view
 		$this->template->content->error = $error;
+		
+		# In case user clicked on a new login link
+		# from a page with an error
+		# Clear out any previous session variables
+		if(!$error)
+		{
+			$_SESSION['error'] = null;
+			$_SESSION['email'] = null;
+			$_SESSION['password'] = null;
+		}
 		
 		# Render template
         echo $this->template;
 	}
 	
-	public function p_login() {
+	public function p_login() 
+	{
+		
+		# Grab unsanitized email for user error purposes
+		$user_email = strip_tags($_POST['email']);
 
-		# Sanitize the user entered data to prevent any funny-business (re: SQL Injection Attacks)
-		$_POST = DB::instance(DB_NAME)->sanitize($_POST);
+		# Clean post fields
+		$_POST = Validate::clean_data($_POST);
 
 		# Hash submitted password so we can compare it against one in the db
 		$_POST['password'] = sha1(PASSWORD_SALT.$_POST['password']);
-
+		
 		# Search the db for this email and password
 		# Retrieve the token if it's available
 		$q = "SELECT token 
@@ -76,34 +191,56 @@ class users_controller extends base_controller {
 
 		$token = DB::instance(DB_NAME)->select_field($q);
 
+		# IF NO TOKEN, CHECK IF EMAIL IS VALID 
+		if(!isset($token)) 
+		{
+			$q = "SELECT email 
+				FROM users
+				WHERE email = '".$_POST['email']."'";
+				
+			$email = DB::instance(DB_NAME)->select_field($q);
+			
+			if(!$email) 
+			{
+				$_SESSION['error'] = "Login failed.  Invalid Email.";
+			} 
+			else 
+			{
+				$_SESSION['error'] = "Login failed.  Please re-enter your password.";
+			}
+			$_SESSION['email'] = $user_email;
+		}
+		
 		# If we didn't find a matching token in the database, it means login failed
-		if(!$token) {
+		if(!isset($token)) 
+		{
 
 			# Send them back to the login page
 			Router::redirect("/users/login/error");
 
 		# But if we did, login succeeded! 
-		} else {
+		} 
+		else 
+		{
 
-			/* 
-			Store this token in a cookie using setcookie()
-			Important Note: *Nothing* else can echo to the page before setcookie is called
-			Not even one single white space.
-			param 1 = name of the cookie
-			param 2 = the value of the cookie
-			param 3 = when to expire
-			param 4 = the path of the cooke (a single forward slash sets it for the entire domain)
-			*/
+			# In case there were previous login issues, clear error messaging
+			if(isset($_SESSION['error'])) 
+			{
+				$_SESSION['error'] = null;
+				$_SESSION['email'] = null;
+			}
+		
 			setcookie("token", $token, strtotime('+2 day'), '/');
 
-			# Send them to the main page - or whever you want them to go
+			# Send them to the main page
 			Router::redirect("/users/index/");
 
 		}
 
 	}
 
-	public function logout() {
+	public function logout() 
+	{
 		# Generate and save a new token for next login
 		$new_token = sha1(TOKEN_SALT.$this->user->email.Utils::generate_random_string());
 
@@ -121,18 +258,64 @@ class users_controller extends base_controller {
 		Router::redirect("/");
 	}
 
-	public function profile($user_name = NULL) {
+	public function profile($user_name = NULL) 
+	{
 		# If user is blank, they're not logged in; redirect them to the login page
-		if(!$this->user) {
+		if(!isset($this->user)) 
+		{
 			Router::redirect('/users/login');
 		}
 
-		# If they weren't redirected away, continue:
-
 		# Setup view
 		$this->template->content = View::instance('v_users_profile');
-		$this->template->title   = "Profile of".$this->user->first_name;
-
+		$client_files = Array("/css/users.css");
+	    $this->template->client_files_head = Utils::load_client_files($client_files);
+		
+		# If user name passed in, find user in the database to display their profile
+		# Else display profile of logged in user
+		if(isset($user_name))
+		{
+			# Clean/sanitize param
+			$clean_data = Validate::clean_data(array('user_name'=>$user_name));
+			$user_name = $clean_data['user_name'];
+			$this->template->title = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
+			$this->template->content->header = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
+			
+			$q = "SELECT first_name, last_name, email, content as last_post 
+				FROM users
+				LEFT JOIN posts USING(user_id)
+				WHERE email = '".$user_name."'
+				ORDER BY posts.created desc 
+				LIMIT 1";
+				
+			$profile_user = DB::instance(DB_NAME)->select_row($q);
+		
+			# If user exists, display profile data
+			# Otherwise, user does not exist
+			if($profile_user)
+			{
+				
+				$this->template->content->first_name = $profile_user['first_name'];
+				$this->template->content->last_name = $profile_user['last_name'];
+				$this->template->content->email = $profile_user['email'];
+				$this->template->content->last_post = $profile_user['last_post'];
+			}
+			else
+			{
+				$this->template->title = "Profile of {$user_name}";
+				$this->template->content->header = "User profile cannot be displayed.";
+				$this->template->content->error = "error";
+			}
+		}
+		else
+		{
+			$this->template->title = "My Profile";
+			$this->template->content->header = "My Profile";
+			$this->template->content->first_name = $this->user->first_name;
+			$this->template->content->last_name = $this->user->last_name;
+			$this->template->content->email = $this->user->email;
+		}
+		
 		# Render template
 		echo $this->template;
 	}
