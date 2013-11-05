@@ -1,8 +1,6 @@
 <?php
-
 class index_controller extends base_controller 
 {
-	
 	/*-------------------------------------------------------------------------------------------------
 
 	-------------------------------------------------------------------------------------------------*/
@@ -16,7 +14,6 @@ class index_controller extends base_controller
 	-------------------------------------------------------------------------------------------------*/
 	public function index() 
 	{
-		
 		# Check if user is logged in
 		# If not logged in, view main landing page with signup/login
 		# Else redirect to users index page
@@ -29,10 +26,6 @@ class index_controller extends base_controller
 			# CSS/JS includes
 			$client_files_head = Array("/css/index.css");
 			$this->template->client_files_head = Utils::load_client_files($client_files_head);
-			/*	
-				$client_files_body = Array("");
-				$this->template->client_files_body = Utils::load_client_files($client_files_body);   
-	    	*/
 		}
 		else
 		{
@@ -41,8 +34,5 @@ class index_controller extends base_controller
 		}
 		# Render the view
 		echo $this->template;
-
 	} # End of method
-	
-	
 } # End of class
