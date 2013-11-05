@@ -35,38 +35,20 @@ label {
 	margin:3px 0px;
 }
 #main_navigation {
-	margin-top:-2px;
+	margin-top:-5px;
 	vertical-align:top;
 }
 #main_navigation img {
 	margin-top:-2px;
 	height:25px;
+	vertical-align:text-top;
 }
 #main_navigation img:hover {
     background:#63ADD0;
 }
-#new_features {
-	float:left;
-	height:auto;
-	color:#000000;
-}
-#new_features img {
-	width:30px;
-	height:30px;
-	padding-right:5px;
-	vertical-align:bottom;
-}
-#vert_line  img {
-	float:left;
-	height:280px;
-}
 #form_content {
 	float:left;
 	padding-left:10px;
-}
-#login {
-	color:#94002D;
-	border:0px;
 }
 #new_user {
 	color:#1240AB;
