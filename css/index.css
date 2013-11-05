@@ -1,0 +1,19 @@
+#new_features {
+	float:left;
+	height:auto;
+	color:#000000;
+}
+#new_features img {
+	width:30px;
+	height:30px;
+	padding-right:5px;
+	vertical-align:bottom;
+}
+#vert_line  img {
+	float:left;
+	height:280px;
+}
+#login {
+	color:#94002D;
+	border:0px;
+}
