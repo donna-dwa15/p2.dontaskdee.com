@@ -10,15 +10,15 @@
 <body>
 	<div id="menu">
 		<!-- Home link logo -->
-		<a href="/"><img src="/images/meower_logo.png"/></a>
+		<a href="/"><img src="/images/meower_logo.png" alt="Welcome to Meower!"/></a>
 		<span class="text_link">
 			<!-- Top Menu for users who are logged in -->
 			<?php if($user): ?>
-				<a href="/users/profile"><img src="/images/profile.png" alt="View Profile"/></a> |
+				<a href="/users/profile"><img src="/images/profile.png" alt="View Profile"/></a>&nbsp;
 				<a href="/users/logout"><img src="/images/logout2.png" alt="Log out!"/></a>				
 			<!-- Menu options for users who are not logged in -->
 			<?php else: ?>
-				<a href="/users/signup"><img src="/images/signup.png" alt="Sign up!"/></a> |
+				<a href="/users/signup"><img src="/images/signup.png" alt="Sign up!"/></a>&nbsp;
 				<a href="/users/login"><img src="/images/login2.png" alt="Log In!"/></a>
 			<?php endif; ?>
 		</span>
