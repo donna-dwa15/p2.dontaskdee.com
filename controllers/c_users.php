@@ -134,7 +134,7 @@ class users_controller extends base_controller
 			# On successful signup, login user and redirect to profile page
 			setcookie("token", $_POST['token'], strtotime('+2 day'), '/');
 			
-			Router::redirect("/users/profile");
+			Router::redirect("/posts/follow/".$user_id);
 		}
     }
 	
