@@ -1,7 +1,8 @@
 body {
 	font-family:Arial,Helvetica,sans-serif;
-	width:1000px;
-	margin:auto;
+	width:750px;
+	padding-top:10px;
+	margin:0 auto;
 	background:#CADBEC;
 }
 h1 {
@@ -44,7 +45,7 @@ label {
 	vertical-align:text-top;
 }
 #main_navigation img:hover {
-    background:#63ADD0;
+	background:#63ADD0;
 }
 #form_content {
 	float:left;
