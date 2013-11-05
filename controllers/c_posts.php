@@ -36,9 +36,7 @@ class posts_controller extends base_controller
         INNER JOIN users 
             ON posts.user_id = users.user_id
         WHERE users_users.user_id = ".$this->user->user_id.
-		" OR posts.user_id = ".$this->user->user_id.
-		" GROUP BY posts.post_id
-		 ORDER by posts.created desc";
+		" ORDER by posts.created desc";
 
 		# Run the query
 		$posts = DB::instance(DB_NAME)->select_rows($q);
@@ -130,7 +128,7 @@ class posts_controller extends base_controller
 		Router::redirect("/posts/add");
     }
 	
-	public function users() 
+	public function users($search_term = NULL) 
 	{
 
 		# Set up the View
@@ -139,14 +137,34 @@ class posts_controller extends base_controller
 		$client_files = Array("/css/users.css");
 	    $this->template->client_files_head = Utils::load_client_files($client_files);
 
-		# Build the query to get all the users except the current user
-		$q = "SELECT *
-			FROM users 
-			WHERE user_id<>".$this->user->user_id;
-			
+		if(!$search_term)
+		{
+			# Build the query to get all the users except the current user
+			$q = "SELECT *
+				FROM users 
+				WHERE user_id<>".$this->user->user_id;
+		}
+		else
+		{
+			# A search term was provided, so search the users by email and/or name
+			$q = "SELECT *
+				FROM users
+				WHERE (email like '%".$search_term."%'
+					OR first_name like '%".$search_term."%'
+					OR last_name like '%".$search_term."%')
+				AND user_id<>".$this->user->user_id.
+				" ORDER BY first_name";
+		}
+		
 		# Execute the query to get all the users. 
 		# Store the result array in the variable $users
 		$users = DB::instance(DB_NAME)->select_rows($q);
+		
+		# No users found, but if search, display appropriate messaging.
+		if(count($users) == 0 && isset($search_term))
+		{			
+			$this->template->content->message = "Your search did not result in any potential prey.";
+		}
 
 		# Build the query to figure out what connections does this user already have? 
 		# I.e. who are they following
@@ -181,9 +199,17 @@ class posts_controller extends base_controller
 		# Do the insert
 		DB::instance(DB_NAME)->insert('users_users', $data);
 
-		# Send them back
-		Router::redirect("/posts/users");
-
+		# If this call was to have user default "follow" self,
+		# send them to their profile page
+		# Else send back to users list page
+		if($user_id_followed == $this->user->user_id)
+		{
+			Router::redirect("/users/profile");
+		}
+		else
+		{
+			Router::redirect("/posts/users");
+		}
 	}
 
 	public function unfollow($user_id_followed) 
@@ -208,6 +234,24 @@ class posts_controller extends base_controller
 		# Send them back
 		Router::redirect("/posts/index");
 
+	}
+	
+	public function p_search()
+	{
+		# Check if actual search term was present
+		if(!empty($_POST['search_term']))
+		{
+			# Clean search data
+			$_POST = Validate::clean_data($_POST);
+			
+			# Take user back to search page with query data
+			Router::redirect("/posts/users/".$_POST['search_term']);
+		}
+		else
+		{
+			# User did not enter a search query
+			Router::redirect("/posts/users");
+		}
 	}
 
 }
