@@ -1,3 +1,6 @@
+label {
+	font-weight:bold;
+}
 article {
 	border:2px solid #000000;
 	border-radius:15px;
@@ -6,11 +9,11 @@ article {
 	padding:10px 15px 0px 15px;
 	background:#EFF6FC;
 }
-.user_info {
-	font-size:17px;
-	font-weight:bold;
-}
 #posts img {
 	vertical-align:bottom;
 	margin:-1px 0px 0px 0px;
+}
+.user_info {
+	font-size:17px;
+	font-weight:bold;
 }
