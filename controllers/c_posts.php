@@ -1,42 +1,40 @@
 <?php
 class posts_controller extends base_controller 
 {
-
-    public function __construct() 
+	public function __construct() 
 	{
-        parent::__construct();
+		parent::__construct();
 
-        # Make sure user is logged in if they want to use anything in this controller
-        if(!$this->user) 
+		# Make sure user is logged in if they want to use anything in this controller
+		if(!$this->user) 
 		{
 			Router::redirect("/users/login");
-        }
-    }
+		}
+	}
 
 	public function index() 
 	{
-
 		# Set up the View
 		$this->template->content = View::instance('v_posts_index');
 		$this->template->title   = "Meow Mix";
 		$client_files = Array("/css/post.css");
-	    $this->template->client_files_head = Utils::load_client_files($client_files);
-		
+		$this->template->client_files_head = Utils::load_client_files($client_files);
+
 		# Build the query
 		$q = "SELECT 
-            posts.content,
-            posts.created,
-            posts.user_id AS post_user_id,
-            users_users.user_id AS follower_id,
-            users.first_name,
-            users.last_name
-        FROM posts
-        INNER JOIN users_users 
-            ON posts.user_id = users_users.user_id_followed
-        INNER JOIN users 
-            ON posts.user_id = users.user_id
-        WHERE users_users.user_id = ".$this->user->user_id.
-		" ORDER by posts.created desc";
+			posts.content,
+			posts.created,
+			posts.user_id AS post_user_id,
+			users_users.user_id AS follower_id,
+			users.first_name,
+			users.last_name
+			FROM posts
+			INNER JOIN users_users 
+			ON posts.user_id = users_users.user_id_followed
+			INNER JOIN users 
+			ON posts.user_id = users.user_id
+			WHERE users_users.user_id = ".$this->user->user_id.
+			" ORDER by posts.created desc";
 
 		# Run the query
 		$posts = DB::instance(DB_NAME)->select_rows($q);
@@ -46,54 +44,50 @@ class posts_controller extends base_controller
 
 		# Render the View
 		echo $this->template;
-
 	}
-	
-    public function add($error = NULL) 
-	{
 
-        # Setup view
-        $this->template->content = View::instance('v_posts_add');
-        $this->template->title   = "Meow";
+	public function add($error = NULL) 
+	{
+		# Setup view
+		$this->template->content = View::instance('v_posts_add');
+		$this->template->title   = "Meow";
 		$client_files = Array("/css/post.css");
-	    $this->template->client_files_head = Utils::load_client_files($client_files);
-		
+		$this->template->client_files_head = Utils::load_client_files($client_files);
+
 		if($error)
 		{
 			$this->template->content->error = "Please enter something to meow about!";
 		}
-		
+
 		# Build the query
 		$q = "SELECT 
-            content,
-            created,
+			content,
+			created,
 			post_id
-        FROM posts
-        WHERE user_id = ".$this->user->user_id.
-		" ORDER BY created desc";
+			FROM posts
+			WHERE user_id = ".$this->user->user_id.
+			" ORDER BY created desc";
 
 		# Run the query
 		$posts = DB::instance(DB_NAME)->select_rows($q);
 
 		# Pass data to the View
 		$this->template->content->posts = $posts;
-		
-        # Render template
-        echo $this->template;
 
-    }
+		# Render template
+		echo $this->template;
+	}
 
-    public function p_add() 
+	public function p_add() 
 	{
-
 		# Clean post data
 		//$_POST = Validate::clean_data($_POST);
-		
+
 		if(!empty($_POST['content']))
 		{
 			# Associate this post with this user
 			$_POST['user_id']  = $this->user->user_id;
-			
+
 			# The x and y are from the image submit button
 			unset($_POST['x']);	
 			unset($_POST['y']);
@@ -105,7 +99,7 @@ class posts_controller extends base_controller
 			# Insert
 			# Note we didn't have to sanitize any of the $_POST data because we're using the insert method which does it for us
 			DB::instance(DB_NAME)->insert('posts', $_POST);
-			
+
 			# Take user back to add post page
 			Router::redirect("/posts/add");
 		}
@@ -114,28 +108,25 @@ class posts_controller extends base_controller
 			# User did not enter any content to be posted
 			Router::redirect("/posts/add/error");
 		}
-	
-    }
-	
+	}
+
 	public function delete($post_id) 
 	{
-	
-        # Delete this post
+		# Delete this post
 		$where_condition = 'WHERE user_id = '.$this->user->user_id.' AND post_id = '.$post_id;
 		DB::instance(DB_NAME)->delete('posts', $where_condition);
 
 		# Send user back to add post page
 		Router::redirect("/posts/add");
-    }
-	
+	}
+
 	public function users($search_term = NULL) 
 	{
-
 		# Set up the View
 		$this->template->content = View::instance("v_posts_users");
 		$this->template->title   = "Potential Prey";
 		$client_files = Array("/css/users.css");
-	    $this->template->client_files_head = Utils::load_client_files($client_files);
+		$this->template->client_files_head = Utils::load_client_files($client_files);
 
 		if(!$search_term)
 		{
@@ -150,16 +141,16 @@ class posts_controller extends base_controller
 			$q = "SELECT *
 				FROM users
 				WHERE (email like '%".$search_term."%'
-					OR first_name like '%".$search_term."%'
-					OR last_name like '%".$search_term."%')
+				OR first_name like '%".$search_term."%'
+				OR last_name like '%".$search_term."%')
 				AND user_id<>".$this->user->user_id.
 				" ORDER BY first_name";
 		}
-		
+
 		# Execute the query to get all the users. 
 		# Store the result array in the variable $users
 		$users = DB::instance(DB_NAME)->select_rows($q);
-		
+
 		# No users found, but if search, display appropriate messaging.
 		if(count($users) == 0 && isset($search_term))
 		{			
@@ -185,10 +176,9 @@ class posts_controller extends base_controller
 		# Render the view
 		echo $this->template;
 	}
-	
+
 	public function follow($user_id_followed) 
 	{
-
 		# Prepare the data array to be inserted
 		$data = Array(
 			"created" => Time::now(),
@@ -214,28 +204,24 @@ class posts_controller extends base_controller
 
 	public function unfollow($user_id_followed) 
 	{
-
 		# Delete this connection
 		$where_condition = "WHERE user_id = ".$this->user->user_id." AND user_id_followed = ".$user_id_followed;
 		DB::instance(DB_NAME)->delete('users_users', $where_condition);
 
 		# Send them back
 		Router::redirect("/posts/users");
-
 	}
-	
+
 	public function post_unfollow($user_id_followed) 
 	{
-
 		# Delete this connection
 		$where_condition = "WHERE user_id = ".$this->user->user_id." AND user_id_followed = ".$user_id_followed;
 		DB::instance(DB_NAME)->delete('users_users', $where_condition);
 
 		# Send them back
 		Router::redirect("/posts/index");
-
 	}
-	
+
 	public function p_search()
 	{
 		# Check if actual search term was present
@@ -243,7 +229,7 @@ class posts_controller extends base_controller
 		{
 			# Clean search data
 			$_POST = Validate::clean_data($_POST);
-			
+
 			# Take user back to search page with query data
 			Router::redirect("/posts/users/".$_POST['search_term']);
 		}
@@ -253,6 +239,5 @@ class posts_controller extends base_controller
 			Router::redirect("/posts/users");
 		}
 	}
-
 }
 ?>
