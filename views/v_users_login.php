@@ -2,6 +2,7 @@
 	<header>
 		<h1>Login to start meowing!</h1>
 	</header>
+	<!-- User Login form -->
 	<form method="POST" action="/users/p_login">
 		<?php if(isset($error)): ?>
 			<div class="error">
@@ -9,6 +10,7 @@
 			</div>
 			<br/>
 		<?php endif; ?>
+		<!-- Required form fields -->
 		<label for="email">Email</label><br/>
 		<input type="text" size="30" maxlength="150" id="email" name="email" value="<?=$_SESSION['email']?>"/><br/>
 		<label for="password">Password</label><br/> 
@@ -19,5 +21,6 @@
 		New user? Sign up!
 	</span>
 	<br/>
+	<!-- Link to signup area for new users -->
 	<a href="/users/signup"><img src="/images/signup_btn.png" alt="sign up!"/></a>
 </div>
