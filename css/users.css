@@ -1,12 +1,25 @@
-#users, #profile_info {
+article {
 	border:2px solid #000000;
 	border-radius:15px;
 	font-size:16px;
 	margin:5px 5px;
-	padding:5px 15px;
+	padding:10px 15px 0px 15px;
+	background:#FFFFFF;
+}
+#users, #profile_info {
+	border:2px solid #000000;
+	border-radius:15px;
+	font-size:16px;
+	font-weight:bold;
+	margin:5px 5px;
+	padding:15px 15px;
 	background:#EFF6FC;
 }
 #users img {
 	vertical-align:bottom;
 	margin:0px 0px -1px 0px;
+	height:28px;
+}
+#search {
+	padding-left:5px;
 }
