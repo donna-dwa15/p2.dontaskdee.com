@@ -27,7 +27,8 @@ class posts_controller extends base_controller
 			posts.user_id AS post_user_id,
 			users_users.user_id AS follower_id,
 			users.first_name,
-			users.last_name
+			users.last_name,
+			users.email
 			FROM posts
 			INNER JOIN users_users 
 			ON posts.user_id = users_users.user_id_followed
@@ -81,7 +82,7 @@ class posts_controller extends base_controller
 	public function p_add() 
 	{
 		# Clean post data
-		//$_POST = Validate::clean_data($_POST);
+		$_POST = Validate::clean_data($_POST);
 
 		if(!empty($_POST['content']))
 		{
@@ -133,7 +134,8 @@ class posts_controller extends base_controller
 			# Build the query to get all the users except the current user
 			$q = "SELECT *
 				FROM users 
-				WHERE user_id<>".$this->user->user_id;
+				WHERE user_id<>".$this->user->user_id.
+				" ORDER BY first_name, last_name, user_id";
 		}
 		else
 		{
@@ -144,7 +146,7 @@ class posts_controller extends base_controller
 				OR first_name like '%".$search_term."%'
 				OR last_name like '%".$search_term."%')
 				AND user_id<>".$this->user->user_id.
-				" ORDER BY first_name";
+				" ORDER BY first_name, last_name, user_id";
 		}
 
 		# Execute the query to get all the users. 
