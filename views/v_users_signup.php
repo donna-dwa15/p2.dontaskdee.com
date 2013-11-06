@@ -29,7 +29,11 @@
 		<br/>
 		<label for="password_confirm">Confirm Password</label><br/>
 		<input type="password" id="password_confirm" name="password_confirm" size="30" maxlength="50" value="<?=$_SESSION['password_confirm']?>"/>
-		<br/>	
+		<br/>
+		<input type="hidden" name="timezone"/>
+		<script>
+			$('input[name=timezone]').val(jstz.determine().name());
+		</script>
 		<input type="image" src="/images/signup_btn.png" alt="sign up!"/>
 	</form>
 </div>
