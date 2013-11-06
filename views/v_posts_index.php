@@ -9,7 +9,7 @@
 					<a href="/users/profile/<?=$post['email']?>"><?=$post['first_name']?> <?=$post['last_name']?></a> 
 				<?php else: echo "You" ?>
 				<?php endif; ?> 
-				posted on 
+				meowed on 
 				<time datetime="<?=Time::display($post['created'],'Y-m-d G:i',$user->timezone)?>">
 					<?=Time::display($post['created'],'F j, Y g:ia',$user->timezone)?>
 				</time>
@@ -24,7 +24,7 @@
 	<?php endforeach; ?>
 	<?php if(count($posts)==0): ?>
 		<article>
-			<p>There are no meows.  You should find someone to stalk.</p>
+			<p>There are no meows.  You should find someone to <a href="/posts/users/">stalk</a>.</p>
 		</article>
 	<?php endif; ?>
 </div>
