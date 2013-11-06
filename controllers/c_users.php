@@ -12,7 +12,7 @@ class users_controller extends base_controller
 		if(!isset($this->user->token))
 		{
 			# User not logged in so send them to login page
-			Router::redirection('/users/login');		
+			login();		
 		}
 		else
 		{
