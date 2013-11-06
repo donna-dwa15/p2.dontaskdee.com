@@ -6,9 +6,18 @@
 		<?php if(!isset($error)): ?>
 			Name: <?=$first_name?> <?=$last_name?><br/>
 			Email: <?=$email?><br/>
+			Approximate Location: <?=$location?><br/> 
+			Meower Since: 
+			<time datetime="<?=Time::display($created,'Y-m-d',$user->timezone)?>">
+				<?=Time::display($created,'F j, Y',$user->timezone)?>
+			</time><br/>
+			Profile Last Updated: 
+			<time datetime="<?=Time::display($last_modified,'Y-m-d G:i',$user->timezone)?>">
+				<?=Time::display($last_modified,'F j, Y g:ia',$user->timezone)?>
+			</time><br/>			
 		<?php endif; ?>
 		<?php if(isset($last_post)): ?>
-			Last Meow: <?=$last_post?><br/>
+			Last Meowed: <?=$last_post?><br/>
 		<?php endif; ?>
 	</div>
 </div>
