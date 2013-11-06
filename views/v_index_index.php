@@ -4,6 +4,7 @@
 	<h2>New features!</h2>
 	<img src="/images/meower_head.png" alt=""/>Feeling lonely?  Search for new people to STALK!<br/>
 	<img src="/images/meower_head.png" alt=""/>Regret a meow?  SCRATCH those unwanted posts!<br/>
+	<img src="/images/meower_head.png" alt=""/>Curious?  View other meower profiles!<br/>
 	<h2>Find your prey today!</h2>
 </div>
 <!-- Content divider -->
