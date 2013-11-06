@@ -13,7 +13,7 @@
 		<textarea name="content" id="content" cols="75" rows="5" maxlength="300"></textarea>
 		<br/>
 		<div id="note">
-			* 300 characters max per post.
+			* 300 characters max per meow.
 		</div>
 		<br/>
 		<input type="image" src="/images/meow_off_btn.png" alt="Meow Off!" value="Meow Off"/>
@@ -24,7 +24,7 @@
 	<h1>Your Recent Meows</h1>
 	<?php foreach($posts as $post): ?>
 		<article>
-			<h2>You posted on 
+			<h2>You meowed on 
 				<time datetime="<?=Time::display($post['created'],'Y-m-d G:i')?>">
 					<?=Time::display($post['created'],'F j, Y g:ia',$user->timezone)?>
 				</time>
