@@ -1,4 +1,5 @@
 <h1>Hello, <?=$user->first_name?>!</h1>
+<!-- Current user stats summary -->
 <div id="users">
 	<?php if(isset($last_login)): ?>
 	Last logged in on 
@@ -15,7 +16,7 @@
 	<article>
 		<!-- Print the name of the post's creator and date created -->
 		<span class="user_info">
-			<?=$random_post['first_name']?> <?=$random_post['last_name']?> posted on 
+			<?=$random_post['first_name']?> <?=$random_post['last_name']?> meowed on 
 			<time datetime="<?=Time::display($random_post['created'],'Y-m-d G:i',$user->timezone)?>">
 				<?=Time::display($random_post['created'],'F j, Y g:ia',$user->timezone)?>
 			</time>
