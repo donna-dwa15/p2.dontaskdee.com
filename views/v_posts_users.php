@@ -1,6 +1,6 @@
-<!-- Display all users -->
 <div id="content">
 	<h1>Potential Prey</h1>
+	<!-- Search users form -->
 	<div id="search">
 		<form action="/posts/p_search" method="POST">
 			<label for="search_term">Search Prey</label>
@@ -8,6 +8,7 @@
 			<input type="submit" value="Search"/>
 		</form>
 	</div>
+	<!-- Display all users or error messaging -->
 	<div id="users">
 		<?php if(isset($message)):?>
 			<?php echo $message ?>
