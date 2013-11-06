@@ -3,7 +3,7 @@
 <div id="users">
 	<?php if(isset($last_login)): ?>
 	Last logged in on 
-	<time datetime="<?=Time::display($last_login,'Y-m-d G:i',$user->timezone)?>">
+	<time datetime="<?=Time::display($last_login,'Y-m-d H:i',$user->timezone)?>">
 		<?=Time::display($last_login,'F j, Y g:ia',$user->timezone)?>
 	</time>.
 	<br/><br/>
@@ -17,7 +17,7 @@
 		<!-- Print the name of the post's creator and date created -->
 		<span class="user_info">
 			<?=$random_post['first_name']?> <?=$random_post['last_name']?> meowed on 
-			<time datetime="<?=Time::display($random_post['created'],'Y-m-d G:i',$user->timezone)?>">
+			<time datetime="<?=Time::display($random_post['created'],'Y-m-d H:i',$user->timezone)?>">
 				<?=Time::display($random_post['created'],'F j, Y g:ia',$user->timezone)?>
 			</time>
 		</span>		
