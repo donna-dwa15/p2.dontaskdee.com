@@ -1,7 +1,6 @@
 <?php
 class users_controller extends base_controller 
 {
-
 	public function __construct() 
 	{
 		parent::__construct();
@@ -9,18 +8,78 @@ class users_controller extends base_controller
 
 	public function index() 
 	{
-
 		# Need to check for token cookie
 		if(!isset($this->user->token))
 		{
 			# User not logged in so send them to login page
-			login();		
+			Router::redirection('/users/login');		
 		}
 		else
 		{
 			# Display user's welcome page
 			$this->template->title = "Welcome to ".APP_NAME;
 			$this->template->content = View::instance('v_users_index');
+			$client_files = Array("/css/users.css");
+			$this->template->client_files_head = Utils::load_client_files($client_files);
+			
+			# Get last login time if available
+			$q = "SELECT last_login
+				FROM users
+				WHERE email='".$this->user->email."'";
+			$last_login = DB::instance(DB_NAME)->select_field($q);
+			
+			if($last_login)
+			{
+				$this->template->content->last_login = $last_login;
+			} 
+		
+			# Get number of users current user is following
+			$q = "SELECT user_id_followed
+				FROM users_users
+				WHERE user_id = ".$this->user->user_id.
+				" AND user_id_followed<>".$this->user->user_id;
+			
+			$followed = DB::instance(DB_NAME)->select_array($q, 'user_id_followed');
+			
+			# Get number of other users following current user
+			$q = "SELECT count(*) as following
+				FROM users_users
+				WHERE user_id_followed = ".$this->user->user_id.
+				" AND user_id<>".$this->user->user_id;
+			
+			$following = DB::instance(DB_NAME)->select_field($q);
+			
+			# Get most recent post from one of those being followed
+			if(count($followed) > 0)
+			{
+				# Find only those followed that have posted
+				$q = "SELECT user_id AS post_user_id
+					FROM posts
+					WHERE user_id IN (".implode(',',array_keys($followed)).
+					") GROUP BY user_id";
+			
+				$random_users = DB::instance(DB_NAME)->select_array($q, 'post_user_id');
+			
+				# Pick a random user from the results
+				$random_user = array_rand($random_users, 1);			
+				$q = "SELECT content, 
+					first_name, 
+					last_name, 
+					posts.created, 
+					posts.user_id AS post_user_id
+					FROM posts
+					INNER JOIN users USING (user_id)
+					WHERE user_id=".$random_user.
+					" ORDER BY posts.created desc
+					LIMIT 1";
+				
+				$random_post = DB::instance(DB_NAME)->select_row($q);
+			}
+		
+			$this->template->content->following = $following;
+			$this->template->content->followed = count($followed);
+			if(isset($random_post) && count($random_post)>0)
+				$this->template->content->random_post = $random_post;
 			
 			echo $this->template;	
 		}
@@ -28,22 +87,23 @@ class users_controller extends base_controller
 
 	public function signup($error = NULL) 
 	{
-	
 		# User is already logged in so no need to sign up
 		if(isset($this->user->token))
 		{
 			Router::redirect('/users/index');
 		}
-	
+
 		# Setup view
 		$this->template->content = View::instance('v_users_signup');
 		$this->template->title   = "Sign Up";
-		$client_files = Array("/css/form.css");
-	    $this->template->client_files_head = Utils::load_client_files($client_files);
-		
+		$client_files_head = Array("/css/form.css",
+									"https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js",
+									"http://cdnjs.cloudflare.com/ajax/libs/jstimezonedetect/1.0.4/jstz.min.js");
+		$this->template->client_files_head = Utils::load_client_files($client_files_head);
+
 		# Pass data to the view
 		$this->template->content->error = $error;
-		
+
 		# In case user clicked on a new signup link
 		# from a page with an error
 		# Clear out any previous session variables
@@ -56,20 +116,18 @@ class users_controller extends base_controller
 			$_SESSION['password'] = null;
 			$_SESSION['password_confirm'] = null;
 		}
-		
+
 		# Render template
 		echo $this->template;	
 	}
 
 	public function p_signup() 
 	{
-	
 		# Validate POST fields before processing further
 		$errors = Validate::validate_signup($_POST);
-		
-		# If no error, check database to see if user already exists
-		# If so, return error message
-		
+
+		# If errors, return to signup page
+		# Else check for duplicate sign up and process
 		if(isset($errors) && count($errors) > 0) 
 		{
 			# Send them back to the signup page
@@ -79,12 +137,12 @@ class users_controller extends base_controller
 			$_SESSION['email'] = $_POST['email'];
 			$_SESSION['password'] = $_POST['password'];
 			$_SESSION['password_confirm'] = $_POST['password_confirm'];
-			
+
 			Router::redirect("/users/signup/error");
 		} 
 		else 
 		{
-			# Clear out error session variables if needed
+			# Clear out error session variables if needed in case user just fixed errors
 			if(isset($_SESSION['error']))
 			{
 				$_SESSION['error'] = null;
@@ -99,21 +157,22 @@ class users_controller extends base_controller
 			# The x and y are from the image submit button
 			unset($_POST['x']);	
 			unset($_POST['y']);
-		
+
 			# More data we want stored with the user
 			$_POST['created']  = Time::now();
 			$_POST['modified'] = Time::now();
-			
+
 			# Clean up data
 			$_POST = Validate::clean_data($_POST);
-			
+
+			# Query for checking duplicate signup
 			$q = "SELECT email
 				FROM users
 				WHERE email='".$_POST['email']."'
 				LIMIT 1";
-			
+
 			$exist_email = DB::instance(DB_NAME)->select_field($q);
-			
+
 			# Duplicate signup, ignore new sign up and alert user
 			if($exist_email)
 			{
@@ -121,41 +180,42 @@ class users_controller extends base_controller
 				$_SESSION['error'] = array(0=>"Account already exists.");
 				Router::redirect("/users/signup/error");
 			}
-			
+
 			# Encrypt the password  
 			$_POST['password'] = sha1(PASSWORD_SALT.$_POST['password']);            
 
 			# Create an encrypted token via their email address and a random string
 			$_POST['token'] = sha1(TOKEN_SALT.$_POST['email'].Utils::generate_random_string());	
-			
+
 			# Insert this user into the database
 			$user_id = DB::instance(DB_NAME)->insert('users', $_POST);
 
-			# On successful signup, login user and redirect to profile page
+			# On successful signup, login user
 			setcookie("token", $_POST['token'], strtotime('+2 day'), '/');
-			
+
+			# Default set up of having user "follow" self so they can view their posts
+			# alongside the ones they actually follow
 			Router::redirect("/posts/follow/".$user_id);
 		}
-    }
-	
+	}
+
 	public function login($error = NULL) 
 	{
-	
 		# User is already logged in so no need to log in again
 		if(isset($this->user->token))
 		{
 			Router::redirect('/users/index');
 		}
-		
+
 		# Setup view
-        $this->template->content = View::instance('v_users_login');
-        $this->template->title   = "Login";
+		$this->template->content = View::instance('v_users_login');
+		$this->template->title   = "Login";
 		$client_files = Array("/css/form.css");
-	    $this->template->client_files_head = Utils::load_client_files($client_files);
+		$this->template->client_files_head = Utils::load_client_files($client_files);
 
 		# Pass data to the view
 		$this->template->content->error = $error;
-		
+
 		# In case user clicked on a new login link
 		# from a page with an error
 		# Clear out any previous session variables
@@ -165,14 +225,13 @@ class users_controller extends base_controller
 			$_SESSION['email'] = null;
 			$_SESSION['password'] = null;
 		}
-		
+
 		# Render template
-        echo $this->template;
+		echo $this->template;
 	}
-	
+
 	public function p_login() 
 	{
-		
 		# Grab unsanitized email for user error purposes
 		$user_email = strip_tags($_POST['email']);
 
@@ -181,7 +240,7 @@ class users_controller extends base_controller
 
 		# Hash submitted password so we can compare it against one in the db
 		$_POST['password'] = sha1(PASSWORD_SALT.$_POST['password']);
-		
+
 		# Search the db for this email and password
 		# Retrieve the token if it's available
 		$q = "SELECT token 
@@ -195,11 +254,13 @@ class users_controller extends base_controller
 		if(!isset($token)) 
 		{
 			$q = "SELECT email 
-				FROM users
-				WHERE email = '".$_POST['email']."'";
-				
+			FROM users
+			WHERE email = '".$_POST['email']."'";
+
 			$email = DB::instance(DB_NAME)->select_field($q);
-			
+
+			# If email not found show invalid email error
+			# Else show invalid password error
 			if(!$email) 
 			{
 				$_SESSION['error'] = "Login failed.  Invalid Email.";
@@ -210,33 +271,34 @@ class users_controller extends base_controller
 			}
 			$_SESSION['email'] = $user_email;
 		}
-		
+
 		# If we didn't find a matching token in the database, it means login failed
 		if(!isset($token)) 
 		{
-
 			# Send them back to the login page
 			Router::redirect("/users/login/error");
 
-		# But if we did, login succeeded! 
+			# But if we did, login succeeded! 
 		} 
 		else 
 		{
-
 			# In case there were previous login issues, clear error messaging
 			if(isset($_SESSION['error'])) 
 			{
 				$_SESSION['error'] = null;
 				$_SESSION['email'] = null;
 			}
-		
+
+			# Set cookie with token to "log in" user
 			setcookie("token", $token, strtotime('+2 day'), '/');
+			
+			# Update last logged in time
+			$data = Array("last_login" => Time::now());
+			DB::instance(DB_NAME)->update("users", $data, "WHERE email = '".$_POST['email']."'");
 
 			# Send them to the main page
 			Router::redirect("/users/index/");
-
 		}
-
 	}
 
 	public function logout() 
@@ -269,56 +331,73 @@ class users_controller extends base_controller
 		# Setup view
 		$this->template->content = View::instance('v_users_profile');
 		$client_files = Array("/css/users.css");
-	    $this->template->client_files_head = Utils::load_client_files($client_files);
-		
+		$this->template->client_files_head = Utils::load_client_files($client_files);
+
 		# If user name passed in, find user in the database to display their profile
 		# Else display profile of logged in user
 		if(isset($user_name))
 		{
 			# Clean/sanitize param
 			$clean_data = Validate::clean_data(array('user_name'=>$user_name));
-			$user_name = $clean_data['user_name'];
-			$this->template->title = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
-			$this->template->content->header = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
-			
-			$q = "SELECT first_name, last_name, email, content as last_post 
-				FROM users
-				LEFT JOIN posts USING(user_id)
-				WHERE email = '".$user_name."'
-				ORDER BY posts.created desc 
-				LIMIT 1";
-				
-			$profile_user = DB::instance(DB_NAME)->select_row($q);
-		
-			# If user exists, display profile data
-			# Otherwise, user does not exist
-			if($profile_user)
-			{
-				
-				$this->template->content->first_name = $profile_user['first_name'];
-				$this->template->content->last_name = $profile_user['last_name'];
-				$this->template->content->email = $profile_user['email'];
-				$this->template->content->last_post = $profile_user['last_post'];
-			}
-			else
-			{
-				$this->template->title = "Profile of {$user_name}";
-				$this->template->content->header = "User profile cannot be displayed.";
-				$this->template->content->error = "error";
-			}
+			$profile_name = $clean_data['user_name'];
 		}
 		else
 		{
 			$this->template->title = "My Profile";
 			$this->template->content->header = "My Profile";
-			$this->template->content->first_name = $this->user->first_name;
-			$this->template->content->last_name = $this->user->last_name;
-			$this->template->content->email = $this->user->email;
+			$profile_name = $this->user->email;
 		}
 		
+		# Check for user name in the database to verify they are an actual user
+		$q = "SELECT first_name, 
+				last_name, 
+				email, 
+				users.created, 
+				users.modified, 
+				users.timezone,
+				content as last_post 
+				FROM users
+				LEFT JOIN posts USING(user_id)
+				WHERE email = '".$profile_name."'
+				ORDER BY posts.created desc 
+				LIMIT 1";
+
+		$profile_user = DB::instance(DB_NAME)->select_row($q);	
+
+		# If user exists, display profile data
+		# Otherwise, user does not exist
+		if($profile_user)
+		{
+			# Viewing someone else's profile nets a different title and header
+			if(isset($user_name))
+			{
+				$this->template->title = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
+				$this->template->content->header = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
+			}
+			$location = explode('/',$profile_user['timezone']);			
+			
+			$this->template->content->first_name = $profile_user['first_name'];
+			$this->template->content->last_name = $profile_user['last_name'];
+			$this->template->content->email = $profile_user['email'];
+			# Retrieve the second portion of the timezone to use as location
+			if(isset($location[1]))
+				$this->template->content->location = str_replace('_',' ',$location[1]);
+			else
+				$this->template->content->location = "Unknown";
+			$this->template->content->created = $profile_user['created'];
+			$this->template->content->last_modified = $profile_user['modified'];
+			$this->template->content->last_post = $profile_user['last_post'];
+			$this->template->content->user = $this->user;
+		}
+		else
+		{
+			$this->template->title = "Profile of {$user_name}";
+			$this->template->content->header = "User profile cannot be displayed.";
+			$this->template->content->error = "error";
+		}
+
 		# Render template
 		echo $this->template;
 	}
-
 } # end of the class
 ?>
