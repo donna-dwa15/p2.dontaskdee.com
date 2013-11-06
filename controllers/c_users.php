@@ -92,8 +92,8 @@ class users_controller extends base_controller
 		$this->template->content = View::instance('v_users_signup');
 		$this->template->title   = "Sign Up";
 		$client_files_head = Array("/css/form.css",
-									"https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js",
-									"http://cdnjs.cloudflare.com/ajax/libs/jstimezonedetect/1.0.4/jstz.min.js");
+						"https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js",
+						"http://cdnjs.cloudflare.com/ajax/libs/jstimezonedetect/1.0.4/jstz.min.js");
 		$this->template->client_files_head = Utils::load_client_files($client_files_head);
 
 		# Pass data to the view
