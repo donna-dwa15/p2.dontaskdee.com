@@ -23,14 +23,10 @@ class users_controller extends base_controller
 			$this->template->client_files_head = Utils::load_client_files($client_files);
 			
 			# Save previous login time before we update it
-			if(isset($this->user->last_login))
+			if(isset($_SESSION['last_login']))
 			{
-				$this->template->content->last_login = $this->user->last_login;
+				$this->template->content->last_login = $_SESSION['last_login'];
 			}
-
-			# Update last logged in time
-			$data = Array("last_login" => Time::now());
-			DB::instance(DB_NAME)->update("users", $data, "WHERE email = '".$this->user->email."'");
 		
 			# Get number of users current user is following
 			$q = "SELECT user_id_followed
@@ -291,6 +287,23 @@ class users_controller extends base_controller
 			# Set cookie with token to "log in" user
 			setcookie("token", $token, strtotime('+2 day'), '/');
 
+			# Retrieve last login time if available, we want to save the old one before overwriting
+			$q = "SELECT last_login
+				FROM users
+				WHERE email='".$_POST['email']."'";
+				
+			$last_login = DB::instance(DB_NAME)->select_field($q);
+			
+			# If available, save current last login time before we update
+			if(isset($last_login))
+			{
+				$_SESSION['last_login'] = $last_login;
+			}
+			
+			# Update last logged in time
+			$data = Array("last_login" => Time::now());
+			DB::instance(DB_NAME)->update("users", $data, "WHERE email = '".$_POST['email']."'");
+
 			# Send them to the main page
 			Router::redirect("/users/index/");
 		}
@@ -311,6 +324,12 @@ class users_controller extends base_controller
 		# Delete their token cookie by setting it to a date in the past - effectively logging them out
 		setcookie("token", "", strtotime('-1 year'), '/');
 
+		# Clear out last login session if set
+		if(isset($_SESSION['last_login']))
+		{
+			unset($_SESSION['last_login']);
+		}
+		
 		# Send them back to the main index.
 		Router::redirect("/");
 	}
