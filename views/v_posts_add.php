@@ -25,7 +25,7 @@
 	<?php foreach($posts as $post): ?>
 		<article>
 			<h2>You meowed on 
-				<time datetime="<?=Time::display($post['created'],'Y-m-d G:i')?>">
+				<time datetime="<?=Time::display($post['created'],'Y-m-d H:i')?>">
 					<?=Time::display($post['created'],'F j, Y g:ia',$user->timezone)?>
 				</time>
 			</h2>
