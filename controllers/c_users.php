@@ -22,16 +22,15 @@ class users_controller extends base_controller
 			$client_files = Array("/css/users.css");
 			$this->template->client_files_head = Utils::load_client_files($client_files);
 			
-			# Get last login time if available
-			$q = "SELECT last_login
-				FROM users
-				WHERE email='".$this->user->email."'";
-			$last_login = DB::instance(DB_NAME)->select_field($q);
-			
-			if($last_login)
+			# Save previous login time before we update it
+			if(isset($this->user->last_login))
 			{
-				$this->template->content->last_login = $last_login;
-			} 
+				$this->template->content->last_login = $this->user->last_login;
+			}
+
+			# Update last logged in time
+			$data = Array("last_login" => Time::now());
+			DB::instance(DB_NAME)->update("users", $data, "WHERE email = '".$this->user->email."'");
 		
 			# Get number of users current user is following
 			$q = "SELECT user_id_followed
@@ -291,10 +290,6 @@ class users_controller extends base_controller
 
 			# Set cookie with token to "log in" user
 			setcookie("token", $token, strtotime('+2 day'), '/');
-			
-			# Update last logged in time
-			$data = Array("last_login" => Time::now());
-			DB::instance(DB_NAME)->update("users", $data, "WHERE email = '".$_POST['email']."'");
 
 			# Send them to the main page
 			Router::redirect("/users/index/");
@@ -323,81 +318,84 @@ class users_controller extends base_controller
 	public function profile($user_name = NULL) 
 	{
 		# If user is blank, they're not logged in; redirect them to the login page
-		if(!isset($this->user)) 
+		if(!isset($this->user->token))
 		{
-			Router::redirect('/users/login');
-		}
-
-		# Setup view
-		$this->template->content = View::instance('v_users_profile');
-		$client_files = Array("/css/users.css");
-		$this->template->client_files_head = Utils::load_client_files($client_files);
-
-		# If user name passed in, find user in the database to display their profile
-		# Else display profile of logged in user
-		if(isset($user_name))
-		{
-			# Clean/sanitize param
-			$clean_data = Validate::clean_data(array('user_name'=>$user_name));
-			$profile_name = $clean_data['user_name'];
+			# User not logged in so send them to login page
+			$this->login();		
 		}
 		else
 		{
-			$this->template->title = "My Profile";
-			$this->template->content->header = "My Profile";
-			$profile_name = $this->user->email;
-		}
-		
-		# Check for user name in the database to verify they are an actual user
-		$q = "SELECT first_name, 
-				last_name, 
-				email, 
-				users.created, 
-				users.modified, 
-				users.timezone,
-				content as last_post 
-				FROM users
-				LEFT JOIN posts USING(user_id)
-				WHERE email = '".$profile_name."'
-				ORDER BY posts.created desc 
-				LIMIT 1";
+			# Setup view
+			$this->template->content = View::instance('v_users_profile');
+			$client_files = Array("/css/users.css");
+			$this->template->client_files_head = Utils::load_client_files($client_files);
 
-		$profile_user = DB::instance(DB_NAME)->select_row($q);	
-
-		# If user exists, display profile data
-		# Otherwise, user does not exist
-		if($profile_user)
-		{
-			# Viewing someone else's profile nets a different title and header
+			# If user name passed in, find user in the database to display their profile
+			# Else display profile of logged in user
 			if(isset($user_name))
 			{
-				$this->template->title = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
-				$this->template->content->header = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
+				# Clean/sanitize param
+				$clean_data = Validate::clean_data(array('user_name'=>$user_name));
+				$profile_name = $clean_data['user_name'];
 			}
-			$location = explode('/',$profile_user['timezone']);			
-			
-			$this->template->content->first_name = $profile_user['first_name'];
-			$this->template->content->last_name = $profile_user['last_name'];
-			$this->template->content->email = $profile_user['email'];
-			# Retrieve the second portion of the timezone to use as location
-			if(isset($location[1]))
-				$this->template->content->location = str_replace('_',' ',$location[1]);
 			else
-				$this->template->content->location = "Unknown";
-			$this->template->content->created = $profile_user['created'];
-			$this->template->content->last_modified = $profile_user['modified'];
-			$this->template->content->last_post = $profile_user['last_post'];
-			$this->template->content->user = $this->user;
-		}
-		else
-		{
-			$this->template->title = "Profile of {$user_name}";
-			$this->template->content->header = "User profile cannot be displayed.";
-			$this->template->content->error = "error";
-		}
+			{
+				$this->template->title = "My Profile";
+				$this->template->content->header = "My Profile";
+				$profile_name = $this->user->email;
+			}
+			
+			# Check for user name in the database to verify they are an actual user
+			$q = "SELECT first_name, 
+					last_name, 
+					email, 
+					users.created, 
+					users.modified, 
+					users.timezone,
+					content as last_post 
+					FROM users
+					LEFT JOIN posts USING(user_id)
+					WHERE email = '".$profile_name."'
+					ORDER BY posts.created desc 
+					LIMIT 1";
 
-		# Render template
-		echo $this->template;
+			$profile_user = DB::instance(DB_NAME)->select_row($q);	
+
+			# If user exists, display profile data
+			# Otherwise, user does not exist
+			if($profile_user)
+			{
+				# Viewing someone else's profile nets a different title and header
+				if(isset($user_name))
+				{
+					$this->template->title = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
+					$this->template->content->header = "Profile of {$profile_user['first_name']} {$profile_user['last_name']}";
+				}
+				$location = explode('/',$profile_user['timezone']);			
+				
+				$this->template->content->first_name = $profile_user['first_name'];
+				$this->template->content->last_name = $profile_user['last_name'];
+				$this->template->content->email = $profile_user['email'];
+				# Retrieve the second portion of the timezone to use as location
+				if(isset($location[1]))
+					$this->template->content->location = str_replace('_',' ',$location[1]);
+				else
+					$this->template->content->location = "Unknown";
+				$this->template->content->created = $profile_user['created'];
+				$this->template->content->last_modified = $profile_user['modified'];
+				$this->template->content->last_post = $profile_user['last_post'];
+				$this->template->content->user = $this->user;
+			}
+			else
+			{
+				$this->template->title = "Profile of {$user_name}";
+				$this->template->content->header = "User profile cannot be displayed.";
+				$this->template->content->error = "error";
+			}
+
+			# Render template
+			echo $this->template;
+		}
 	}
 } # end of the class
 ?>
