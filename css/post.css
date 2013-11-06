@@ -12,6 +12,7 @@ article {
 #posts img {
 	vertical-align:bottom;
 	margin:-1px 0px 0px 0px;
+	height:28px;
 }
 .user_info {
 	font-size:17px;
