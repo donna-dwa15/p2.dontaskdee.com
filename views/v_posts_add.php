@@ -16,7 +16,7 @@
 			* 300 characters max per meow.
 		</div>
 		<br/>
-		<input type="image" src="/images/meow_off_btn.png" alt="Meow Off!" value="Meow Off"/>
+		<input type="image" src="/images/meow_off_btn.png" alt="Meow Off!"/>
 	</form> 
 </div>
 <!-- Display users posts -->
