@@ -10,7 +10,7 @@
 				<?php else: echo "You" ?>
 				<?php endif; ?> 
 				meowed on 
-				<time datetime="<?=Time::display($post['created'],'Y-m-d G:i',$user->timezone)?>">
+				<time datetime="<?=Time::display($post['created'],'Y-m-d H:i',$user->timezone)?>">
 					<?=Time::display($post['created'],'F j, Y g:ia',$user->timezone)?>
 				</time>
 			</span>		
