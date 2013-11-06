@@ -62,7 +62,8 @@ class Validate {
 		
 		foreach($fields as $key=>$value)
 		{
-			$clean_fields[$key] = strip_tags($value);
+			# Switched to htmlspecialchars since I like to be able to <3
+			$clean_fields[$key] = htmlspecialchars($value);
 		}
 		
 		$clean_fields = DB::instance(DB_NAME)->sanitize($clean_fields);
